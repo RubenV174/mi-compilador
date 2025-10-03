@@ -1,0 +1,24 @@
+class MiPrograma {
+    void main() {
+        int contador;
+        contador = 0;
+
+        string mensaje;
+        
+        print("Iniciando bucle...");
+
+        while (contador < mensaje) {
+            
+            if (contador == 3) {
+                print("El contador es tres!");
+            } else {
+                break;
+            }
+
+            contador = contador / 1;
+            boolean b = true;
+        }
+
+        print("Bucle terminado.");
+    }
+}
