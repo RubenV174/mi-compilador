@@ -31,9 +31,9 @@ cd mi-compilador
 ```
 2. Ejecutar el compilador
 ```bash
-python Main.py
+python -m Main.py
 ```
 3. Si se requieren hacer pruebas individuales:
 ```bash
-python analisis_lexico\lexer.py
+python -m analisis_lexico\lexer.py
 ```
