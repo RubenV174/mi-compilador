@@ -18,7 +18,12 @@ Se revisa la coherencia del codigo y la compatibilidad del código, devuelve una
 |----|-lexer.py             # Analizador Léxico
 |----|-tabla_transicion.py  # Tabla de donde se obtendran algunos tokens
 |----|-tokens.py            # Clase tokens de donde se extrae la estructura de los tokens
-|----|-expr_reg.py          # Expresiones Regulares de las cuales se definen los tokens 
+|----|-expr_reg.py          # Expresiones Regulares de las cuales se definen los tokens
+|----|-__init__.py
+|-analisis_sintactico/
+|----|-parser.py            # Analizador Sintáctico
+|----|-ASTNode.py           # Clase AST donde se extrae la estructura de los nodos del AST
+|----|-__init__.py
 |-Main.py
 |-code.txt              # Codigo que se usará para probar el compilador
 ```
@@ -36,4 +41,8 @@ python -m Main.py
 3. Si se requieren hacer pruebas individuales:
 ```bash
 python -m analisis_lexico\lexer.py
+```
+ó
+```bash
+python -m analisis_sintactico\parser.py
 ```
