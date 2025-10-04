@@ -19,7 +19,7 @@ class Lexer:
     def __str__(self):
         if not self.tokens: return "El Lexer no ha generado ningún token aún."
         
-        lineas = []
+        lineas = ["Lista de Tokens"]
         
         cabecera = f"{'ID':<5} {'Linea':<5} {'Tipo':<25} {'Lexema':<30}"
         separador = "-" * 65
@@ -335,9 +335,13 @@ class Lexer:
         else:
             return "DESCONOCIDO"
         
-
 code_path = './code.txt'
-lexer = Lexer(code_path)
-tokens = lexer.tokenize()
+tokens = Lexer(code_path).tokenize()
 
-print(lexer)
+def mostrar_lista_de_tokens(path):
+    lexer = Lexer(path)
+    tokens = lexer.tokenize()
+    print(lexer)
+    
+if __name__ == "__main__":
+    mostrar_lista_de_tokens(code_path)
