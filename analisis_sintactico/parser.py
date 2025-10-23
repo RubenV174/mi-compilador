@@ -1,7 +1,9 @@
 from .ASTNode import AST
 from analisis_lexico.lexer import Lexer
-from analisis_lexico.expr_reg import TOKEN_REGEX
+# from analisis_lexico.expr_reg import TOKEN_REGEX
 from analisis_lexico.tokens import Token
+from analisis_semantico.semantic import Semantic
+from analisis_semantico.variables import Variable
 
 class Parser:
     def __init__(self, tokens):
@@ -12,6 +14,8 @@ class Parser:
         self.token_actual: Token = self.tokens[0] if tokens else None
         
         self.ast: AST
+
+        self.semantic = Semantic()
         
     def __str__(self):
         if not self.ast: return "El Parser aún no ha generado un AST"
@@ -31,8 +35,12 @@ class Parser:
         
         lineas.append(f"{identacion}└── {nodo.tipo}{valor}")
         
-        for hijo in nodo.hijos:
-            self._generar_str_ast(hijo, lineas, nivel + 1)
+        # print(f"DEBUG: Visitando nodo '{nodo.tipo}'. Tipo de hijos: {type(nodo.hijos)}. Contenido: {repr(nodo.hijos)}")
+
+        if nodo.hijos and isinstance(nodo.hijos, list):
+            for hijo in nodo.hijos:
+                if hijo is not None:
+                    self._generar_str_ast(hijo, lineas, nivel + 1)
             
     def __repr__(self):
         num_tokens = len(self.tokens)
@@ -72,66 +80,24 @@ class Parser:
         self.consumir("CLASS")
         nombre = self.consumir("IDENTIFICADOR")
         self.consumir("LLAVE IZQ")
-        miembros = self.parse_miembros()
+        main = self.parse_main()
         self.consumir("LLAVE DER")
-        return AST("PROGRAMA", valor=nombre.valor, hijos=miembros)
+        return AST("PROGRAMA", valor=nombre.valor, hijos=[main])
     
-    def parse_miembros(self):
-        miembros = []
-        while self.token_actual and self.token_actual.tipo != 'LLAVE DER':
-            miembros.append(self.parse_miembro())
-        return miembros
-    
-    def parse_miembro(self):
-        tipo = self.consumir("TIPO DATO")
-        
-        nombre = None
-        if self.match("IDENTIFICADOR") or self.match("MAIN"):
-            nombre = self.token_actual
-            self.avanzar()
-        else: 
-            print(f"Error Semántico: Se esperaba un identificador o 'main' después del tipo de dato en la línea {self.token_actual.linea}")
-            return None
-        
-        if self.match("PARENTESIS IZQ"):
-            return self.parse_metodo(tipo.valor, nombre.valor)
-        else:
-            return self.parse_declaracion_variable(tipo.valor, nombre)
-        
-    def parse_metodo(self, tipo, nombre):
+    def parse_main(self):
+        self.consumir("VOID")
+        self.consumir("MAIN")
         self.consumir("PARENTESIS IZQ")
-        parametros = self.parse_parametros()
         self.consumir("PARENTESIS DER")
         self.consumir("LLAVE IZQ")
         cuerpo = self.parse_sentencias()
         self.consumir("LLAVE DER")
+
         return AST(
-            "METODO",
-            valor=nombre,
-            hijos=[
-                AST("TIPO DATO", valor=tipo),
-                AST("PARAMETROS", hijos=parametros),
-                AST("CUERPO", hijos=cuerpo)
-            ]
+            "MAIN",
+            valor='main',
+            hijos=cuerpo
         )
-    
-    def parse_parametros(self):
-        parametros = []
-        if self.match("PARENTESIS DER"): return parametros
-        while True:
-            tipo = self.consumir("TIPO DATO")
-            nombre = self.consumir("IDENTIFICADOR")
-            parametro = AST(
-                tipo="PARAMETRO",
-                hijos=[
-                    AST("TIPO DATO", valor=tipo.valor),
-                    AST("IDENTIFICADOR", valor=nombre.valor)
-                ]
-            )
-            parametros.append(parametro)
-            if self.match("COMA"): break
-            self.consumir("COMA")
-        return parametros
     
     def parse_sentencias(self):
         sentencias = []
@@ -152,8 +118,6 @@ class Parser:
         elif self.match("IDENTIFICADOR"):
             if self.peek() and self.peek().tipo == "OP ASIGNACION":
                 return self.parse_asignacion()
-            elif self.peek() and self.peek().tipo == "PARENTESIS IZQ":
-                return self.parse_llamada_funcion()
         print(f"Sentencia inválida en linea {self.token_actual.linea}, token: {self.token_actual.valor}")
         return None
 
@@ -166,10 +130,20 @@ class Parser:
             identificador = primer_identificador or self.consumir("IDENTIFICADOR")
             primer_identificador = None
             
+            self.semantic.verificar_declaracion(identificador.valor, tipo)
+
             expresion_hijo = None
             if self.match("OP ASIGNACION"):
                 self.consumir("OP ASIGNACION")
                 expresion_hijo = self.parse_expresion()
+
+                tipo_expresion = self.semantic.evaluar_tipo_expresion(expresion_hijo)
+                es_compatible = (tipo == tipo_expresion) or \
+                                (tipo == "double" and tipo_expresion == "int")
+                if not es_compatible:
+                   raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
+                print(f"INFO: Inicialización de '{identificador.valor}' es semánticamente correcta.")
+
                 
             declaraciones.append(
                 AST(
@@ -193,18 +167,22 @@ class Parser:
         
         self.consumir("OP ASIGNACION")
         expresion = self.parse_expresion()
+
+        self.semantic.verificar_declaracion(identificador.valor, identificador.tipo)
         
         self.consumir("PUNTO Y COMA")
-        return AST(
+        asignacion = AST(
             "ASIGNACION",
             valor=identificador.valor,
             hijos=[expresion]
         )
+        self.semantic.verificar_asignacion(asignacion)
+
 
     def parse_if(self):
         self.consumir("IF")
         self.consumir("PARENTESIS IZQ")
-        condicion = self.parse_expresion()
+        condicion = self.parse_condicion()
         self.consumir("PARENTESIS DER")
         bloque_if = self.parse_bloque()
         
@@ -224,32 +202,6 @@ class Parser:
         sentencias = self.parse_sentencias()
         self.consumir("LLAVE DER")
         return sentencias
-    
-    def parse_llamada_funcion(self, token_name=None):
-        if not token_name: token_name = self.consumir("IDENTIFICADOR")
-
-        self.consumir("PARENTESIS IZQ")
-        argumentos = self.parse_argumentos()
-        self.consumir("PARENTESIS DER")
-        
-        return AST(tipo="LLAMADA FUNCION", valor=token_name, hijos=argumentos)
-    
-    def parse_argumentos(self):
-        argumentos = []
-        
-        if self.match("PARENTESIS DER"): return argumentos
-        
-        while True:
-            argumento = self.parse_expresion()
-            if argumento: argumentos.append(argumento)
-            else:
-                print("Argumento inválido en llamada a función")
-                return None
-            
-            if self.match("COMA"): self.consumir("COMA")
-            else: break
-            
-        return argumentos
     
     def parse_while(self):
         self.consumir("WHILE")
@@ -272,7 +224,7 @@ class Parser:
         inicializacion = self.parse_inicializacion()
         self.consumir("PUNTO Y COMA")
         
-        condicion = self.parse_expresion()
+        condicion = self.parse_condicion()
         self.consumir("PUNTO Y COMA")
         
         actualizacion = self.parse_actualizacion()
@@ -468,11 +420,7 @@ class Parser:
         elif self.match("IDENTIFICADOR"):
             siguiente = self.peek()
             self.avanzar()
-            
-            if siguiente and siguiente.tipo == "PARENTESIS IZQ":
-                return self.parse_llamada_funcion(token_name=token)
-            else:
-                return AST(tipo="IDENTIFICADOR", valor=token.valor)
+            return AST(tipo="IDENTIFICADOR", valor=token.valor)
         
         # Subexpresión (entre '()')
         elif self.match("PARENTESIS IZQ"):
@@ -485,7 +433,10 @@ class Parser:
         print(f"Factor inválido en línea {token.linea}")
         return None
         
-    def parse_condicion(self): return self.parse_expresion_logica()
+    def parse_condicion(self): 
+        expresion = self.parse_expresion_logica()
+        if self.semantic.evaluar_tipo_expresion(expresion) != 'boolean': raise TypeError(f"Error de Tipos: Se esperaba 'boolean' en condición")
+        return expresion
     
     def parse_expresion_logica(self):
         # NOT
