@@ -3,7 +3,7 @@ from .tabla_transicion import tabla_transicion
 from .expr_reg import TOKEN_REGEX
 
 tipo_dato = ["void", "int", "double", "string", "boolean", "char"]
-palabras_reservadas = ["class", "void", "main", "if", "else", "while", "for", "return", "new", "print", "read", "int", "double", "string", "boolean", "char", "void", "continue", "break"]
+palabras_reservadas = ["class", "void", "main", "if", "else", "while", "for", "return", "new", "print", "read", "int", "double", "string", "boolean", "char", "void", "continue", "break", "true", "false"]
 
 class Lexer:
     def __init__(self, archivo):
