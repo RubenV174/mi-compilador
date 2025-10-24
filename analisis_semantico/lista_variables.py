@@ -16,7 +16,7 @@ class ListaVariables:
         
         header = f"{'Nombre':<20} {'Tipo':<10}"
         separator = "-" * 31
-        lines = [header, separator]
+        lines = ["Lista de Variables", separator, header, separator]
 
         for var in self.variables.values():
             row = f"{var.nombre:<20} {var.tipo:<10}"

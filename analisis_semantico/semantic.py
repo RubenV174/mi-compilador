@@ -1,5 +1,3 @@
-# analisis_semantico/semantic.py
-
 from analisis_semantico.lista_variables import ListaVariables
 from analisis_semantico.variables import Variable
 from analisis_sintactico.ASTNode import AST
