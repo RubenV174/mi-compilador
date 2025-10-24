@@ -1,6 +1,5 @@
 from .ASTNode import AST
 from analisis_lexico.lexer import Lexer
-# from analisis_lexico.expr_reg import TOKEN_REGEX
 from analisis_lexico.tokens import Token
 from analisis_semantico.semantic import Semantic
 from analisis_semantico.variables import Variable
@@ -23,7 +22,7 @@ class Parser:
         lineas = ["Árbol Sintáctico Abstracto"]
         
         self._generar_str_ast(self.ast, lineas)
-        lineas.append("------------------------")
+        lineas.append("-" * 31)
         
         return '\n'.join(lineas)
     
@@ -35,8 +34,6 @@ class Parser:
         
         lineas.append(f"{identacion}└── {nodo.tipo}{valor}")
         
-        # print(f"DEBUG: Visitando nodo '{nodo.tipo}'. Tipo de hijos: {type(nodo.hijos)}. Contenido: {repr(nodo.hijos)}")
-
         if nodo.hijos and isinstance(nodo.hijos, list):
             for hijo in nodo.hijos:
                 if hijo is not None:
@@ -411,18 +408,15 @@ class Parser:
     def parse_factor(self):
         token = self.token_actual
         
-        # Número
         if self.match("ENTERO") or self.match("REAL") or self.match("CADENA") or self.match("CARACTER") or self.match("TRUE") or self.match("FALSE"):
             self.avanzar()
             return AST(tipo="LITERAL", valor=token.valor)
         
-        # Identificador o llamada a función
         elif self.match("IDENTIFICADOR"):
             siguiente = self.peek()
             self.avanzar()
             return AST(tipo="IDENTIFICADOR", valor=token.valor)
         
-        # Subexpresión (entre '()')
         elif self.match("PARENTESIS IZQ"):
             self.consumir("PARENTESIS IZQ")
             subexpresion = self.parse_expresion()
@@ -430,8 +424,7 @@ class Parser:
             return subexpresion
         
         self.avanzar()
-        print(f"Factor inválido en línea {token.linea}")
-        return None
+        raise SyntaxError(f"Factor inválido en línea {token.linea}")
         
     def parse_condicion(self): 
         expresion = self.parse_expresion_logica()
@@ -469,6 +462,10 @@ parser.parse()
 
 def mostrar_ast():
     print(parser)
+
+def mostrar_var():
+    print(parser.semantic.variables)
     
 if __name__ == "__main__":
-    mostrar_ast()
+    mostrar_ast() # <-- Sintáxis
+    mostrar_var() # <-- Semántica
