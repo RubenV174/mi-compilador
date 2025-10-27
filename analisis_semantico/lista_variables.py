@@ -2,13 +2,16 @@ from .variables import Variable
 
 class ListaVariables:
     def __init__(self):
-        self.variables = {}
+        self.variables = []
 
     def declarar(self, variable: Variable):
-        self.variables[variable.nombre] = variable
+        self.variables.append(variable)
 
     def buscar(self, nombre):
-        return self.variables.get(nombre)
+        for variable in self.variables:
+            if nombre == variable.nombre:
+                return variable
+        return None
     
     def __str__(self):
         if not self.variables:
@@ -18,7 +21,7 @@ class ListaVariables:
         separator = "-" * 31
         lines = ["Lista de Variables", separator, header, separator]
 
-        for var in self.variables.values():
+        for var in self.variables:
             row = f"{var.nombre:<20} {var.tipo:<10}"
             lines.append(row)
         
