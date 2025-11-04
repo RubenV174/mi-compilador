@@ -119,53 +119,43 @@ class Parser:
         return None
 
     
-    def parse_declaracion_variable(self, tipo_consumido=None, primer_identificador=None):
+    def parse_declaracion_variable(self, tipo_consumido=None):
         tipo = tipo_consumido or self.consumir("TIPO DATO").valor
-        declaraciones = []
         
-        while True:
-            identificador = primer_identificador or self.consumir("IDENTIFICADOR")
-            primer_identificador = None
+        identificador = self.consumir("IDENTIFICADOR")
             
-            self.semantic.verificar_declaracion(identificador.valor, tipo)
+        self.semantic.verificar_declaracion(identificador.valor, tipo)
 
-            expresion_hijo = None
-            if self.match("OP ASIGNACION"):
-                self.consumir("OP ASIGNACION")
-                expresion_hijo = self.parse_expresion()
+        expresion_hijo = None
+        if self.match("OP ASIGNACION"):
+            self.consumir("OP ASIGNACION")
+            expresion_hijo = self.parse_expresion()
 
-                tipo_expresion = self.semantic.evaluar_tipo_expresion(expresion_hijo)
-                es_compatible = (tipo == tipo_expresion) or \
-                                (tipo == "double" and tipo_expresion == "int")
-                if not es_compatible:
-                   raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
-                print(f"INFO: Inicialización de '{identificador.valor}' es semánticamente correcta.")
+            tipo_expresion = self.semantic.evaluar_tipo_expresion(expresion_hijo)
+            es_compatible = (tipo == tipo_expresion) or \
+                            (tipo == "double" and tipo_expresion == "int")
+            if not es_compatible:
+                raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
+            print(f"INFO: Inicialización de '{identificador.valor}' es semánticamente correcta.")
 
                 
-            declaraciones.append(
-                AST(
-                    "DECLARACION",
-                    valor=identificador.valor,
-                    hijos=[AST(
-                        "TIPO",
-                        valor=tipo
-                    ), expresion_hijo]
-                )
-            )
-            
-            if not self.match("COMA"): break
-            self.consumir("COMA")
-        
+        declaracion = AST(
+            "DECLARACION",
+            valor=identificador.valor,
+            hijos=[AST(
+                "TIPO",
+                valor=tipo
+            ), expresion_hijo]
+        )
+
         self.consumir("PUNTO Y COMA")
-        return AST("LISTA DECLARACIONES", hijos=declaraciones)
+        return declaracion
     
     def parse_asignacion(self):
         identificador = self.consumir("IDENTIFICADOR")
         
         self.consumir("OP ASIGNACION")
         expresion = self.parse_expresion()
-
-        self.semantic.verificar_declaracion(identificador.valor, identificador.tipo)
         
         self.consumir("PUNTO Y COMA")
         asignacion = AST(
@@ -173,7 +163,10 @@ class Parser:
             valor=identificador.valor,
             hijos=[expresion]
         )
+
         self.semantic.verificar_asignacion(asignacion)
+
+        return asignacion
 
 
     def parse_if(self):
@@ -234,8 +227,8 @@ class Parser:
             hijos=[
                 inicializacion, condicion, actualizacion, 
                 AST("CUERPO", hijos=cuerpo)
-                ]
-            )
+            ]
+        )
 
     def parse_inicializacion(self):
         if self.match("TIPO DATO"):
@@ -303,21 +296,31 @@ class Parser:
 
 
     def parse_declaracion_sin_punto_y_coma(self):
-        tipo_str = self.consumir("TIPO DATO").valor
-        nodos_de_declaracion = []
-        while True:
-            identificador_token = self.consumir("IDENTIFICADOR")
-            expresion_nodo = None
-            if self.match("OP ASIGNACION"):
-                self.consumir("OP ASIGNACION")
-                expresion_nodo = self.parse_expresion()
-            nodo_actual = AST("DECLARACION", valor=identificador_token.valor, hijos=[AST("TIPO", valor=tipo_str), expresion_nodo])
-            nodos_de_declaracion.append(nodo_actual)
-            if not self.match("COMA"):
-                break
-            self.consumir("COMA")
+        tipo = self.consumir("TIPO DATO").valor
         
-        return AST("LISTA_DECLARACIONES", hijos=nodos_de_declaracion)
+        identificador = self.consumir("IDENTIFICADOR")
+            
+        self.semantic.verificar_declaracion(identificador.valor, tipo)
+
+        expresion_hijo = None
+        if self.match("OP ASIGNACION"):
+            self.consumir("OP ASIGNACION")
+            expresion_hijo = self.parse_expresion()
+
+            tipo_expresion = self.semantic.evaluar_tipo_expresion(expresion_hijo)
+            es_compatible = (tipo == tipo_expresion) or \
+                            (tipo == "double" and tipo_expresion == "int")
+            if not es_compatible:
+                raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
+            print(f"INFO: Inicialización de '{identificador.valor}' es semánticamente correcta.")
+
+        declaracion = AST(
+            "DECLARACION",
+            valor=identificador.valor,
+            hijos=[AST("TIPO", valor=tipo), expresion_hijo]
+        )
+        
+        return AST("DECLARACION", hijos=declaracion)
     
     def parse_expresion(self):
         expresion = self.parse_termino_or()
