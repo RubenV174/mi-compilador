@@ -15,6 +15,8 @@ class Generador_CI:
         'AND': '&&',
         'OR': '||',
         'NOT': '!',
+        'IGUAL': '==',
+        'DISTINTO': '!=',
     }
 
     def __init__(self):
@@ -31,6 +33,7 @@ class Generador_CI:
 
     def generar_lista(self, nodo: AST):
         self.visitar(nodo)
+        return self.code
 
     def visitar(self, nodo: AST):
         if nodo is None:

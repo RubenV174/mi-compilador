@@ -63,14 +63,13 @@ class Parser:
             self.avanzar()
             return token
         else:
-            print(f"Error Semántico: Se esperaba '{tipo_esperado}' pero se encontró '{self.token_actual.tipo}' en línea {self.token_actual.linea}")
+            raise SyntaxError(f"Error Sintáctico: Se esperaba '{tipo_esperado}' pero se encontró '{self.token_actual.tipo}' en línea {self.token_actual.linea}")
             return None
             
     def parse(self):
         self.ast = self.parse_programa()
         if self.token_actual:
-            print(f"Error Sintáctico: Tokens inesperados despues del cierre de clase: '{self.token_actual.valor}'")
-            return None
+            raise SyntaxError(f"Error Sintáctico: Tokens inesperados despues del cierre de clase: '{self.token_actual.valor}'")
         return self.ast
     
     def parse_programa(self):
@@ -136,7 +135,6 @@ class Parser:
                             (tipo == "double" and tipo_expresion == "int")
             if not es_compatible:
                 raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
-            print(f"INFO: Inicialización de '{identificador.valor}' es semánticamente correcta.")
 
                 
         declaracion = AST(
@@ -372,7 +370,7 @@ class Parser:
             operador = self.consumir(self.token_actual.tipo)
             derecha = self.parse_expresion_aritmetica()
             return AST(
-                tipo="EXPRESION RELACIONAL",
+                tipo="EXPRESION BINARIA",
                 valor=operador.tipo.lstrip("OP "),
                 hijos=[izquierda, derecha]
             )
@@ -418,7 +416,7 @@ class Parser:
         elif self.match("IDENTIFICADOR"):
             siguiente = self.peek()
             self.avanzar()
-            return AST(tipo="IDENTIFICADOR", valor=token.valor)
+            return AST(tipo="LITERAL", valor=token.valor)
         
         elif self.match("PARENTESIS IZQ"):
             self.consumir("PARENTESIS IZQ")
@@ -439,14 +437,14 @@ class Parser:
         if self.match("OP NOT"):
             operador = self.consumir("OP NOT")
             expr = self.parse_expresion_logica()
-            return AST(tipo="EXPRESION NOT", valor=operador.valor, hijos=[expr])
+            return AST(tipo="EXPRESION UNARIA", valor=operador.valor, hijos=[expr])
         
         # OR
         nodo = self.parse_expresion_and()
         while self.match("OR"):
             operador = self.consumir("OR")
             der = self.parse_expresion_and()
-            nodo = AST(tipo="EXPRESION OR",valor=operador.valor,hijos=[nodo, der])
+            nodo = AST(tipo="EXPRESION BINARIA",valor=operador.valor,hijos=[nodo, der])
         return nodo
 
     def parse_expresion_and(self):
@@ -454,7 +452,7 @@ class Parser:
         while self.match("OP AND"):
             operador = self.consumir("AND")
             derecho = self.parse_expresion_relacional()
-            nodo =  AST(tipo="EXPRESION AND",valor=operador.valor,hijos=[nodo, derecho])
+            nodo =  AST(tipo="EXPRESION BINARIA",valor=operador.valor,hijos=[nodo, derecho])
         return nodo
 
 code_path = './code.txt'
