@@ -5,11 +5,11 @@ from codigo_intermedio.generador_ci import Generador_CI
 code_path = './code.txt'
 
 lexer = Lexer(code_path)
-tokens = lexer.tokenize() # Genera Lista de Tokens
+tokens = lexer.tokenize()
 print(lexer)
 
 parser = Parser(tokens)
-ast = parser.parse() # Genera AST y Lista de Variables
+ast = parser.parse()
 print(parser)
 
 var = parser.semantic.variables
@@ -17,4 +17,4 @@ print(var)
 
 genCI = Generador_CI()
 polish = genCI.generar_lista(ast)
-print(polish)
+print(genCI)
