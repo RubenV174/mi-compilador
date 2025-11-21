@@ -7,13 +7,9 @@ from analisis_semantico.variables import Variable
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
-        
         self.pos = 0
-        
         self.token_actual: Token = self.tokens[0] if tokens else None
-        
         self.ast: AST
-
         self.semantic = Semantic()
         
     def __str__(self):
@@ -54,7 +50,7 @@ class Parser:
             
     def match(self, tipo_esperado):
         if tipo_esperado == "TIPO DATO":
-            return self.token_actual and self.token_actual.valor in ["void", "int", "double", "string", "char", "boolean"]
+            return self.token_actual and self.token_actual.valor in ["int", "double", "string", "char", "boolean"]
         return self.token_actual and self.token_actual.tipo == tipo_esperado
     
     def consumir(self, tipo_esperado):
@@ -64,7 +60,6 @@ class Parser:
             return token
         else:
             raise SyntaxError(f"Error Sintáctico: Se esperaba '{tipo_esperado}' pero se encontró '{self.token_actual.tipo}' en línea {self.token_actual.linea}")
-            return None
             
     def parse(self):
         self.ast = self.parse_programa()
@@ -114,8 +109,7 @@ class Parser:
         elif self.match("IDENTIFICADOR"):
             if self.peek() and self.peek().tipo == "OP ASIGNACION":
                 return self.parse_asignacion()
-        print(f"Sentencia inválida en linea {self.token_actual.linea}, token: {self.token_actual.valor}")
-        return None
+        raise SyntaxError(f"Sentencia inválida en linea {self.token_actual.linea}, token: {self.token_actual.valor}")
 
     
     def parse_declaracion_variable(self, tipo_consumido=None):
@@ -136,8 +130,10 @@ class Parser:
             if not es_compatible:
                 raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
 
-                
-        declaracion = AST(
+
+        self.consumir("PUNTO Y COMA")
+
+        return AST(
             "DECLARACION",
             valor=identificador.valor,
             hijos=[AST(
@@ -145,9 +141,6 @@ class Parser:
                 valor=tipo
             ), expresion_hijo]
         )
-
-        self.consumir("PUNTO Y COMA")
-        return declaracion
     
     def parse_asignacion(self):
         identificador = self.consumir("IDENTIFICADOR")
@@ -182,8 +175,11 @@ class Parser:
         
         return AST(
             tipo="IF",
-            hijos=[condicion, AST("BLOQUE IF", hijos=bloque_if), bloque_else]
+            hijos=[condicion, 
+                AST("BLOQUE IF", hijos=bloque_if),
+                bloque_else]
         )
+
         
     def parse_bloque(self):
         self.consumir("LLAVE IZQ")
@@ -321,8 +317,7 @@ class Parser:
         return AST("DECLARACION", hijos=declaracion)
     
     def parse_expresion(self):
-        expresion = self.parse_termino_or()
-        return expresion
+        return self.parse_termino_or()
     
     def parse_termino_or(self):
         expresion = self.parse_termino_and()
@@ -416,7 +411,7 @@ class Parser:
         elif self.match("IDENTIFICADOR"):
             siguiente = self.peek()
             self.avanzar()
-            return AST(tipo="LITERAL", valor=token.valor)
+            return AST(tipo="IDENTIFICADOR", valor=token.valor)
         
         elif self.match("PARENTESIS IZQ"):
             self.consumir("PARENTESIS IZQ")
@@ -433,27 +428,22 @@ class Parser:
         return expresion
     
     def parse_expresion_logica(self):
-        # NOT
         if self.match("OP NOT"):
-            operador = self.consumir("OP NOT")
-            expr = self.parse_expresion_logica()
-            return AST(tipo="EXPRESION UNARIA", valor=operador.valor, hijos=[expr])
+            expresion = self.parse_expresion_logica()
+            return AST(tipo="EXPRESION UNARIA", valor='NOT', hijos=[expresion])
         
-        # OR
-        nodo = self.parse_expresion_and()
-        while self.match("OR"):
-            operador = self.consumir("OR")
+        expresion = self.parse_expresion_and()
+        while self.match("OP OR"):
             der = self.parse_expresion_and()
-            nodo = AST(tipo="EXPRESION BINARIA",valor=operador.valor,hijos=[nodo, der])
-        return nodo
+            expresion = AST(tipo="EXPRESION BINARIA",valor='OR',hijos=[expresion, der])
+        return expresion
 
     def parse_expresion_and(self):
-        nodo = self.parse_expresion_relacional()
+        expresion = self.parse_expresion_not()
         while self.match("OP AND"):
-            operador = self.consumir("AND")
-            derecho = self.parse_expresion_relacional()
-            nodo =  AST(tipo="EXPRESION BINARIA",valor=operador.valor,hijos=[nodo, derecho])
-        return nodo
+            derecho = self.parse_expresion_not()
+            expresion =  AST(tipo="EXPRESION BINARIA", valor='AND', hijos=[expresion, derecho])
+        return expresion
 
 code_path = './code.txt'
 tokens = Lexer(code_path).tokenize()
@@ -468,5 +458,5 @@ def mostrar_var():
     print(parser.semantic.variables)
     
 if __name__ == "__main__":
-    mostrar_ast() # <-- Sintáxis
-    mostrar_var() # <-- Semántica
+    mostrar_ast()
+    mostrar_var()
