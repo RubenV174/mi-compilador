@@ -101,7 +101,6 @@ class Parser:
         elif self.match("IF"): return self.parse_if()
         elif self.match("WHILE"): return self.parse_while()
         elif self.match("FOR"): return self.parse_for()
-        elif self.match("RETURN"): return self.parse_return()
         elif self.match("PRINT"): return self.parse_print()
         elif self.match("READ"): return self.parse_read()
         elif self.match("BREAK"): return self.parse_break()
@@ -238,20 +237,7 @@ class Parser:
             else:
                 return self.parse_expresion()
         return None
-    
-    def parse_return(self):        
-        self.consumir("RETURN")
-        if self.match("PUNTO Y COMA"):
-            self.consumir("PUNTO Y COMA")
-            return AST(tipo="RETURN")
-        expresion = self.parse_expresion()
-        self.consumir("PUNTO_Y_COMA")
-        
-        return AST(
-            tipo="RETURN",
-            hijos=[expresion]
-        )
-        
+
     def parse_print(self):
         self.consumir("PRINT")
         self.consumir("PARENTESIS IZQ")
