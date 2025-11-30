@@ -19,13 +19,17 @@ class Generador_CI:
         'DISTINTO': '!=',
     }
 
-    def __init__(self):
+    def __init__(self, ast: AST):
+        self.ast = ast
         self.codigo = []
+
         self.c_temp = 0
+
         self.c_brincoA = 0
         self.c_brincoB = 0
         self.c_brincoC = 0
         self.c_brincoD = 0
+
         self.brinco_break = None
         self.brinco_continue = None
     
@@ -68,8 +72,8 @@ class Generador_CI:
     def add_code(self, operador: str, op1: str = None, op2: str = None, res: str = None):
         self.codigo.append(Cuadruplo(operador, op1, op2, res))
 
-    def generar_lista(self, nodo: AST):
-        self.visitar(nodo)
+    def generar_lista(self):
+        self.visitar(self.ast)
         return self.codigo
 
     def visitar(self, nodo: AST):

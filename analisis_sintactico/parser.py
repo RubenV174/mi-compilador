@@ -444,19 +444,3 @@ class Parser:
             derecho = self.parse_expresion_not()
             expresion =  AST(tipo="EXPRESION BINARIA", valor='AND', hijos=[expresion, derecho])
         return expresion
-
-code_path = './code.txt'
-tokens = Lexer(code_path).tokenize()
-
-parser = Parser(tokens)
-parser.parse()
-
-def mostrar_ast():
-    print(parser)
-
-def mostrar_var():
-    print(parser.semantic.variables)
-    
-if __name__ == "__main__":
-    mostrar_ast()
-    mostrar_var()

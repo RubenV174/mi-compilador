@@ -6,15 +6,11 @@ tipo_dato = ["void", "int", "double", "string", "boolean", "char"]
 palabras_reservadas = ["class", "void", "main", "if", "else", "while", "for", "return", "new", "print", "read", "int", "double", "string", "boolean", "char", "void", "continue", "break", "true", "false"]
 
 class Lexer:
-    def __init__(self, archivo):
+    def __init__(self, codigo_fuente):
         self.pos = 0
         self.linea = 1
         self.tokens = []
-        try:
-            with open(archivo, 'r', encoding='utf-8') as file:
-                self.code = file.read()
-        except (FileNotFoundError, UnicodeDecodeError) as e:
-            print(f"Error al leer archivo: {e}")
+        self.code = codigo_fuente
             
     def __str__(self):
         if not self.tokens: return "El Lexer no ha generado ningún token aún."
@@ -283,18 +279,8 @@ class Lexer:
             return "SALTO LINEA"
         elif char == ' ':
             return "ESPACIO"
-        elif char == None:
+        elif char is None:
             return "EOF"
         else:
             return "DESCONOCIDO"
         
-code_path = './code.txt'
-tokens = Lexer(code_path).tokenize()
-
-def mostrar_lista_de_tokens(path):
-    lexer = Lexer(path)
-    lexer.tokenize()
-    print(lexer)
-    
-if __name__ == "__main__":
-    mostrar_lista_de_tokens(code_path)
