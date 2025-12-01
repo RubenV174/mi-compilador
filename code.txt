@@ -1,24 +1,51 @@
-class MiPrograma {
+class TestControlFlujo {
     void main() {
-        int contador;
-        contador = 0;
+        print("=== INICIO DE PRUEBAS ===");
 
-        string mensaje;
-        
-        print("Iniciando bucle...");
-
-        while (contador < mensaje) {
-            
-            if (contador == 3) {
-                print("El contador es tres!");
-            } else {
-                break;
+        print("--- Prueba 1: WHILE con CONTINUE ---");
+        int i;
+        i = 0;
+        while (i < 5) {
+            i = i + 1;
+            if (i == 3) {
+                print("Saltando el numero 3");
+                continue; 
             }
-
-            contador = contador / 1;
-            boolean b = true;
+            print(i);
         }
 
-        print("Bucle terminado.");
+        print("--- Prueba 2: WHILE con BREAK ---");
+        int j;
+        j = 0;
+        while (j < 10) {
+            if (j == 4) {
+                print("Rompiendo ciclo en 4");
+                break;
+            }
+            print(j);
+            j = j + 1;
+        }
+
+        print("--- Prueba 3: FOR con BREAK ---");
+        int k;
+        for (k = 0; k < 10; k = k + 1) {
+            if (k == 2) {
+                print("Rompiendo FOR en 2");
+                break;
+            }
+            print(k);
+        }
+
+        print("--- Prueba 4: FOR con CONTINUE ---");
+        int m;
+        for (m = 0; m < 5; m = m + 1) {
+            if (m == 2) {
+                print("Saltando iteracion 2 del FOR");
+                continue;
+            }
+            print(m);
+        }
+
+        print("=== FIN DE PRUEBAS ===");
     }
 }
