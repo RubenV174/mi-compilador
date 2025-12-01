@@ -196,8 +196,7 @@ class Parser:
         
         return AST(
             tipo="WHILE",
-            hijos=[AST("CONDICION", hijos=[condicion]), AST("CUERPO", hijos=cuerpo)],
-            valor=None
+            hijos=[condicion, AST("CUERPO", hijos=cuerpo)]
         )
     
     def parse_for(self):

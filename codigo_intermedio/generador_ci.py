@@ -30,8 +30,7 @@ class Generador_CI:
         self.c_brincoC = 0
         self.c_brincoD = 0
 
-        self.brinco_break = None
-        self.brinco_continue = None
+        self.pila_bucles = []
     
     def __str__(self):
         code = "\nCodigo Intermedio\n"
@@ -174,29 +173,44 @@ class Generador_CI:
             self.visitar_sentencia(sentencia)
 
     def visitar_WHILE(self, nodo: AST):
+        l_inicio = self.nuevo_brinco('D')
+        l_fin = self.nuevo_brinco('C')
+
+        self.add_code('LABEL', res=l_inicio)
+
         condicion = nodo.hijos[0]
         if condicion.hijos[0].tipo in ['TRUE', 'FALSE']:
             self.visitar_TRUE_FALSE(condicion)
         else:
             self.visitar_expresion(condicion)
 
-        brf = self.nuevo_brinco('C')
-        self.add_code(operador="BRF", res=brf)
-
+        self.add_code("BRF", res=l_fin)
+        self.pila_bucles.append({
+            'continue': l_inicio,
+            'break': l_fin
+        })
+        
         sentencias = nodo.hijos[1].hijos
         for sentencia in sentencias:
             self.visitar_sentencia(sentencia)
 
-        bri = self.nuevo_brinco('D')
-        self.add_code(operador="BRI", res=bri)
+        self.pila_bucles.pop()
+        self.add_code("BRI", res=l_inicio)
+        self.add_code('LABEL', res=l_fin)
 
     def visitar_FOR(self, nodo: AST):
         if nodo.hijos[0].tipo == 'DECLARACION':
-            inicializacion = nodo.hijos[0].hijos
+            inicializacion = nodo.hijos[0]
             self.visitar_DECLARACION(inicializacion)
         elif nodo.hijos[0].tipo == 'ASIGNACION':
-            inicializacion = nodo.hijos[0].hijos
+            inicializacion = nodo.hijos[0]
             self.visitar_ASIGNACION(inicializacion)
+
+        l_cond = self.nuevo_brinco('D')
+        l_step = self.nuevo_brinco('D')
+        l_fin  = self.nuevo_brinco('C')
+
+        self.add_code('LABEL', res=l_cond)
 
         condicion = nodo.hijos[1]
         if condicion.hijos[0].tipo in ['TRUE', 'FALSE']:
@@ -204,18 +218,25 @@ class Generador_CI:
         else:
             self.visitar_expresion(condicion)
 
-        brf = self.nuevo_brinco('C')
-        self.add_code(operador="BRF", res=brf)
+        self.add_code("BRF", res=l_fin)
+
+        self.pila_bucles.append({
+            'continue': l_step,
+            'break': l_fin
+        })
 
         cuerpo = nodo.hijos[3].hijos
         for sentencia in cuerpo:
             self.visitar_sentencia(sentencia)
 
+        self.pila_bucles.pop()
+        self.add_code('LABEL', res=l_step)
+
         actualizacion = nodo.hijos[2]
         self.visitar_ASIGNACION(actualizacion)
 
-        bri = self.nuevo_brinco('D')
-        self.add_code(operador="BRI", res=bri)
+        self.add_code("BRI", res=l_cond)
+        self.add_code('LABEL', res=l_fin)
 
     def visitar_TRUE_FALSE(self, nodo: AST):
         valor = nodo.hijos[0].valor
@@ -238,7 +259,15 @@ class Generador_CI:
         else: self.add_code('return')
 
     def visitar_BREAK(self, nodo: AST):
-        self.add_code('break')
+        if not self.pila_bucles:
+            raise SyntaxError("Error: 'break' utilizado fuera de un bucle.")
+        
+        objetivo = self.pila_bucles[-1]['break']
+        self.add_code("BRI", res=objetivo)
     
     def visitar_CONTINUE(self, nodo: AST):
-        self.add_code('continue')
+        if not self.pila_bucles:
+            raise SyntaxError("Error: 'continue' utilizado fuera de un bucle.")
+        
+        objetivo = self.pila_bucles[-1]['continue']
+        self.add_code("BRI", res=objetivo)
