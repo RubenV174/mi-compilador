@@ -141,13 +141,13 @@ class Parser:
             ), expresion_hijo]
         )
     
-    def parse_asignacion(self):
+    def parse_asignacion(self, es_for: bool = False):
         identificador = self.consumir("IDENTIFICADOR")
         
         self.consumir("OP ASIGNACION")
         expresion = self.parse_expresion()
         
-        self.consumir("PUNTO Y COMA")
+        if not es_for: self.consumir("PUNTO Y COMA")
         asignacion = AST(
             "ASIGNACION",
             valor=identificador.valor,
@@ -157,7 +157,6 @@ class Parser:
         self.semantic.verificar_asignacion(asignacion)
 
         return asignacion
-
 
     def parse_if(self):
         self.consumir("IF")
@@ -204,7 +203,6 @@ class Parser:
         self.consumir("PARENTESIS IZQ")
         
         inicializacion = self.parse_inicializacion()
-        self.consumir("PUNTO Y COMA")
         
         condicion = self.parse_condicion()
         self.consumir("PUNTO Y COMA")
@@ -224,15 +222,15 @@ class Parser:
 
     def parse_inicializacion(self):
         if self.match("TIPO DATO"):
-            return self.parse_declaracion_sin_punto_y_coma()
+            return self.parse_declaracion_variable()
         elif self.match("IDENTIFICADOR"):
-            return self.parse_asignacion_sin_punto_y_coma()
+            return self.parse_asignacion()
         return None
 
     def parse_actualizacion(self):
         if self.match("IDENTIFICADOR"):
             if self.peek().tipo == "OP ASIGNACION":
-                return self.parse_asignacion_sin_punto_y_coma()
+                return self.parse_asignacion(True)
             else:
                 return self.parse_expresion()
         return None
@@ -266,40 +264,6 @@ class Parser:
         self.consumir("CONTINUE")
         self.consumir("PUNTO Y COMA")
         return AST("CONTINUE")
-    
-    def parse_asignacion_sin_punto_y_coma(self):
-        identificador = self.consumir("IDENTIFICADOR")
-        self.consumir("OP ASIGNACION")
-        expresion = self.parse_expresion()
-        return AST("ASIGNACION", valor=identificador.valor, hijos=[expresion])
-
-
-    def parse_declaracion_sin_punto_y_coma(self):
-        tipo = self.consumir("TIPO DATO").valor
-        
-        identificador = self.consumir("IDENTIFICADOR")
-            
-        self.semantic.verificar_declaracion(identificador.valor, tipo)
-
-        expresion_hijo = None
-        if self.match("OP ASIGNACION"):
-            self.consumir("OP ASIGNACION")
-            expresion_hijo = self.parse_expresion()
-
-            tipo_expresion = self.semantic.evaluar_tipo_expresion(expresion_hijo)
-            es_compatible = (tipo == tipo_expresion) or \
-                            (tipo == "double" and tipo_expresion == "int")
-            if not es_compatible:
-                raise TypeError(f"Error de Tipos: No se puede inicializar la variable '{identificador.valor}' (tipo '{tipo}') con un valor de tipo '{tipo_expresion}'.")
-            print(f"INFO: Inicialización de '{identificador.valor}' es semánticamente correcta.")
-
-        declaracion = AST(
-            "DECLARACION",
-            valor=identificador.valor,
-            hijos=[AST("TIPO", valor=tipo), expresion_hijo]
-        )
-        
-        return AST("DECLARACION", hijos=declaracion)
     
     def parse_expresion(self):
         return self.parse_termino_or()

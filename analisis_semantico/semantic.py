@@ -6,16 +6,13 @@ class Semantic:
     def __init__(self):
         self.variables = ListaVariables()
     
-    # Algoritmo 1: Variable ya declarada
     def verificar_declaracion(self, nombre: str, tipo: str):
         if self.variables.buscar(nombre) is not None:
             raise NameError(f"Error Semántico: La variable '{nombre}' ya ha sido declarada.")
             
         variable = Variable(nombre, tipo)
         self.variables.declarar(variable)
-        print(f"INFO: Variable '{nombre}' declarada con éxito.")
         
-    # Algoritmo 2: Variable no declarada
     def verificar_uso_variable(self, nombre: str):
         if self.variables.buscar(nombre) is None:
             raise NameError(f"Error Semántico: La variable '{nombre}' no ha sido declarada.")
@@ -35,13 +32,10 @@ class Semantic:
         nodo_expresion = nodo.hijos[0]
         tipo_expresion = self.evaluar_tipo_expresion(nodo_expresion)
         
-        es_compatible = (tipo_esperado == tipo_expresion) or \
-                        (tipo_esperado == "double" and tipo_expresion == "int")
+        es_compatible = (tipo_esperado == tipo_expresion) or (tipo_esperado == "double" and tipo_expresion == "int")
             
         if not es_compatible:
-            raise TypeError(f"Error de Tipos: No se puede asignar tipo '{tipo_expresion}' a la variable '{nombre}' de tipo '{tipo_esperado}'.")
-            
-        print(f"INFO: Asignación a '{nombre}' es semánticamente correcta.")
+            raise TypeError(f"Error de Tipos: No se puede asignar tipo '{tipo_expresion}' a la variable '{nombre}' de tipo '{tipo_esperado}'.")            
         
     def evaluar_tipo_expresion(self, nodo: AST):
         if not nodo:
